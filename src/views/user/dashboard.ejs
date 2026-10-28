@@ -1,0 +1,295 @@
+<%- include('../partials/header') %>
+<%- include('../partials/navbar') %>
+
+<main class="container-fluid px-lg-5 py-4">
+  <!-- Page Header & Action Bar -->
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+    <div>
+      <h2 class="fw-bold mb-1">My Todos</h2>
+      <p class="text-muted small mb-0">Manage and track your personal tasks and deliverables</p>
+    </div>
+    <button type="button" class="btn btn-primary d-inline-flex align-items-center gap-2 rounded-pill px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#createTodoModal">
+      <i class="bi bi-plus-circle-fill"></i>
+      <span>Add New Task</span>
+    </button>
+  </div>
+
+  <%- include('../partials/flash') %>
+
+  <!-- Metrics Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+      <div class="card stat-card stat-blue p-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="text-white-50 text-uppercase small fw-semibold">Total Tasks</div>
+            <h3 class="fw-bold mb-0 mt-1"><%= stats.total %></h3>
+          </div>
+          <i class="bi bi-collection fs-1 text-white-50"></i>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="card stat-card stat-amber p-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="text-white-50 text-uppercase small fw-semibold">Pending</div>
+            <h3 class="fw-bold mb-0 mt-1"><%= stats.pending %></h3>
+          </div>
+          <i class="bi bi-hourglass-split fs-1 text-white-50"></i>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="card stat-card stat-indigo p-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="text-white-50 text-uppercase small fw-semibold">In Progress</div>
+            <h3 class="fw-bold mb-0 mt-1"><%= stats.in_progress %></h3>
+          </div>
+          <i class="bi bi-arrow-repeat fs-1 text-white-50"></i>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="card stat-card stat-emerald p-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="text-white-50 text-uppercase small fw-semibold">Completed</div>
+            <h3 class="fw-bold mb-0 mt-1"><%= stats.completed %></h3>
+          </div>
+          <i class="bi bi-check2-circle fs-1 text-white-50"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter & Search Bar -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-3">
+      <form action="/todos" method="GET" class="row g-2 align-items-center">
+        <div class="col-12 col-md-4">
+          <div class="input-group">
+            <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" name="search" class="form-control border-start-0" placeholder="Search tasks by title or notes..." value="<%= filters.search %>">
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <select name="status" class="form-select">
+            <option value="all" <%= filters.status === 'all' ? 'selected' : '' %>>All Statuses</option>
+            <option value="pending" <%= filters.status === 'pending' ? 'selected' : '' %>>Pending</option>
+            <option value="in_progress" <%= filters.status === 'in_progress' ? 'selected' : '' %>>In Progress</option>
+            <option value="completed" <%= filters.status === 'completed' ? 'selected' : '' %>>Completed</option>
+          </select>
+        </div>
+        <div class="col-6 col-md-3">
+          <select name="priority" class="form-select">
+            <option value="all" <%= filters.priority === 'all' ? 'selected' : '' %>>All Priorities</option>
+            <option value="low" <%= filters.priority === 'low' ? 'selected' : '' %>>Low</option>
+            <option value="medium" <%= filters.priority === 'medium' ? 'selected' : '' %>>Medium</option>
+            <option value="high" <%= filters.priority === 'high' ? 'selected' : '' %>>High</option>
+          </select>
+        </div>
+        <div class="col-12 col-md-2 d-flex gap-2">
+          <button type="submit" class="btn btn-primary w-100 rounded-3">
+            <i class="bi bi-funnel me-1"></i> Filter
+          </button>
+          <a href="/todos" class="btn btn-outline-secondary rounded-3" title="Reset Filters">
+            <i class="bi bi-arrow-counterclockwise"></i>
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Todos Grid / List -->
+  <% if (todos.length === 0) { %>
+    <div class="card border-0 shadow-sm text-center py-5">
+      <div class="card-body">
+        <div class="text-muted mb-3">
+          <i class="bi bi-clipboard-x fs-1 text-secondary opacity-50"></i>
+        </div>
+        <h4 class="fw-bold">No tasks found</h4>
+        <p class="text-muted small">You don't have any todos matching your current filters.</p>
+        <button type="button" class="btn btn-primary btn-sm rounded-pill px-4 mt-2" data-bs-toggle="modal" data-bs-target="#createTodoModal">
+          <i class="bi bi-plus-circle me-1"></i> Create First Task
+        </button>
+      </div>
+    </div>
+  <% } else { %>
+    <div class="row g-3">
+      <% todos.forEach(todo => { %>
+        <div class="col-12 col-md-6 col-xl-4">
+          <div class="card h-100 border-0 shadow-sm position-relative <%= todo.status === 'completed' ? 'bg-light bg-opacity-50' : 'bg-white' %>">
+            <div class="card-body d-flex flex-column p-4">
+              <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                <span class="badge badge-priority-<%= todo.priority %> text-uppercase rounded-pill px-2.5 py-1" style="font-size: 0.7rem;">
+                  <i class="bi bi-flag-fill me-1"></i><%= todo.priority %>
+                </span>
+                <span class="badge badge-status-<%= todo.status %> text-uppercase rounded-pill px-2.5 py-1" style="font-size: 0.7rem;">
+                  <%= todo.status.replace('_', ' ') %>
+                </span>
+              </div>
+
+              <h5 class="card-title fw-bold mt-2 mb-1 <%= todo.status === 'completed' ? 'todo-completed-title' : '' %>">
+                <%= todo.title %>
+              </h5>
+
+              <% if (todo.description) { %>
+                <p class="card-text text-muted small flex-grow-1 mt-2 mb-3">
+                  <%= todo.description %>
+                </p>
+              <% } else { %>
+                <div class="flex-grow-1"></div>
+              <% } %>
+
+              <hr class="my-3 text-secondary opacity-25">
+
+              <div class="d-flex justify-content-between align-items-center mt-auto">
+                <div class="text-muted small">
+                  <% if (todo.due_date) { %>
+                    <i class="bi bi-calendar-event me-1 text-primary"></i>
+                    <span>Due <%= new Date(todo.due_date).toLocaleDateString() %></span>
+                  <% } else { %>
+                    <span class="text-muted fst-italic">No due date</span>
+                  <% } %>
+                </div>
+
+                <div class="d-flex align-items-center gap-1">
+                  <!-- Quick Toggle Status Button -->
+                  <form action="/todos/<%= todo.id %>/toggle" method="POST" class="m-0">
+                    <button type="submit" class="btn btn-sm <%= todo.status === 'completed' ? 'btn-outline-warning' : 'btn-outline-success' %> rounded-circle" style="width: 32px; height: 32px; padding: 0;" title="<%= todo.status === 'completed' ? 'Mark Incomplete' : 'Mark Completed' %>">
+                      <i class="bi <%= todo.status === 'completed' ? 'bi-arrow-counterclockwise' : 'bi-check2' %>"></i>
+                    </button>
+                  </form>
+
+                  <!-- Edit Button -->
+                  <button type="button" class="btn btn-sm btn-outline-primary rounded-circle" style="width: 32px; height: 32px; padding: 0;" title="Edit Task"
+                    data-bs-toggle="modal"
+                    data-bs-target="#editTodoModal"
+                    data-id="<%= todo.id %>"
+                    data-title="<%= todo.title %>"
+                    data-description="<%= todo.description || '' %>"
+                    data-status="<%= todo.status %>"
+                    data-priority="<%= todo.priority %>"
+                    data-duedate="<%= todo.due_date ? new Date(todo.due_date).toISOString().split('T')[0] : '' %>">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+
+                  <!-- Delete Button -->
+                  <form action="/todos/<%= todo.id %>/delete" method="POST" class="m-0" onsubmit="return confirm('Are you sure you want to permanently delete this todo?');">
+                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-circle" style="width: 32px; height: 32px; padding: 0;" title="Delete Task">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  <% } %>
+</main>
+
+<!-- Create Todo Modal -->
+<div class="modal fade" id="createTodoModal" tabindex="-1" aria-labelledby="createTodoModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow rounded-4">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-bold" id="createTodoModalLabel"><i class="bi bi-plus-circle text-primary me-2"></i>Create New Todo</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form action="/todos" method="POST">
+        <div class="modal-body py-4">
+          <div class="mb-3">
+            <label for="createTitle" class="form-label fw-medium small">Task Title <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="createTitle" name="title" placeholder="What needs to be done?" required>
+          </div>
+          <div class="mb-3">
+            <label for="createDescription" class="form-label fw-medium small">Description (Optional)</label>
+            <textarea class="form-control" id="createDescription" name="description" rows="3" placeholder="Add additional details or notes..."></textarea>
+          </div>
+          <div class="row g-2">
+            <div class="col-6 mb-3">
+              <label for="createStatus" class="form-label fw-medium small">Status</label>
+              <select class="form-select" id="createStatus" name="status">
+                <option value="pending" selected>Pending</option>
+                <option value="in_progress">In Progress</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
+            <div class="col-6 mb-3">
+              <label for="createPriority" class="form-label fw-medium small">Priority</label>
+              <select class="form-select" id="createPriority" name="priority">
+                <option value="low">Low</option>
+                <option value="medium" selected>Medium</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label for="createDueDate" class="form-label fw-medium small">Due Date (Optional)</label>
+            <input type="date" class="form-control" id="createDueDate" name="due_date">
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary rounded-pill px-4">Create Task</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Todo Modal -->
+<div class="modal fade" id="editTodoModal" tabindex="-1" aria-labelledby="editTodoModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow rounded-4">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-bold" id="editTodoModalLabel"><i class="bi bi-pencil-square text-primary me-2"></i>Edit Todo</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="editTodoForm" method="POST">
+        <div class="modal-body py-4">
+          <div class="mb-3">
+            <label for="editTitle" class="form-label fw-medium small">Task Title <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="editTitle" name="title" required>
+          </div>
+          <div class="mb-3">
+            <label for="editDescription" class="form-label fw-medium small">Description</label>
+            <textarea class="form-control" id="editDescription" name="description" rows="3"></textarea>
+          </div>
+          <div class="row g-2">
+            <div class="col-6 mb-3">
+              <label for="editStatus" class="form-label fw-medium small">Status</label>
+              <select class="form-select" id="editStatus" name="status">
+                <option value="pending">Pending</option>
+                <option value="in_progress">In Progress</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
+            <div class="col-6 mb-3">
+              <label for="editPriority" class="form-label fw-medium small">Priority</label>
+              <select class="form-select" id="editPriority" name="priority">
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label for="editDueDate" class="form-label fw-medium small">Due Date</label>
+            <input type="date" class="form-control" id="editDueDate" name="due_date">
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary rounded-pill px-4">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

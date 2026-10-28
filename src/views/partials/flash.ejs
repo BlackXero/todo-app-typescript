@@ -1,0 +1,15 @@
+<% if (successMessage && successMessage.length > 0) { %>
+  <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm d-flex align-items-center mb-4" role="alert">
+    <i class="bi bi-check-circle-fill me-2 fs-5 text-success"></i>
+    <div><%= successMessage %></div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+<% } %>
+
+<% if (errorMessage && errorMessage.length > 0) { %>
+  <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm d-flex align-items-center mb-4" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-2 fs-5 text-danger"></i>
+    <div><%= errorMessage %></div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+<% } %>
