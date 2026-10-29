@@ -22,6 +22,8 @@ export interface TodoFilters {
   priority?: string;
   search?: string;
   userId?: number;
+  page?: number;
+  limit?: number;
 }
 
 export class TodoModel {
@@ -56,23 +58,19 @@ export class TodoModel {
     return query.orderBy('created_at', 'desc');
   }
 
-  static async findAllWithOwner(filters: TodoFilters = {}): Promise<TodoWithOwner[]> {
-    let query = db('todos')
-      .join('users', 'todos.user_id', 'users.id')
-      .select('todos.*', 'users.username', 'users.email');
-
+  private static applyFilters(query: any, filters: TodoFilters): void {
     if (filters.userId) {
-      query = query.andWhere('todos.user_id', filters.userId);
+      query.andWhere('todos.user_id', filters.userId);
     }
     if (filters.status && filters.status !== 'all') {
-      query = query.andWhere('todos.status', filters.status);
+      query.andWhere('todos.status', filters.status);
     }
     if (filters.priority && filters.priority !== 'all') {
-      query = query.andWhere('todos.priority', filters.priority);
+      query.andWhere('todos.priority', filters.priority);
     }
     if (filters.search && filters.search.trim() !== '') {
       const term = `%${filters.search.trim()}%`;
-      query = query.andWhere((builder) => {
+      query.andWhere((builder: any) => {
         builder
           .where('todos.title', 'like', term)
           .orWhere('todos.description', 'like', term)
@@ -80,13 +78,60 @@ export class TodoModel {
           .orWhere('users.email', 'like', term);
       });
     }
+  }
+
+  static async findAllWithOwner(filters: TodoFilters = {}): Promise<TodoWithOwner[]> {
+    let query = db('todos')
+      .join('users', 'todos.user_id', 'users.id')
+      .select('todos.*', 'users.username', 'users.email');
+
+    this.applyFilters(query, filters);
+
+    if (filters.limit) {
+      query = query.limit(filters.limit);
+      if (filters.page && filters.page > 1) {
+        query = query.offset((filters.page - 1) * filters.limit);
+      }
+    }
 
     return query.orderBy('todos.created_at', 'desc');
+  }
+
+  static async paginate(filters: TodoFilters = {}): Promise<{ todos: TodoWithOwner[]; total: number }> {
+    const page = Math.max(1, filters.page || 1);
+    const limit = filters.limit || 50;
+
+    const dataQuery = db('todos')
+      .join('users', 'todos.user_id', 'users.id')
+      .select('todos.*', 'users.username', 'users.email');
+
+    const countQuery = db('todos')
+      .join('users', 'todos.user_id', 'users.id');
+
+    this.applyFilters(dataQuery, filters);
+    this.applyFilters(countQuery, filters);
+
+    const [todos, countRes] = await Promise.all([
+      dataQuery
+        .orderBy('todos.created_at', 'desc')
+        .limit(limit)
+        .offset((page - 1) * limit),
+      countQuery.count<{ count: number | string }[]>({ count: 'todos.id' }),
+    ]);
+
+    return {
+      todos,
+      total: Number(countRes[0]?.count || 0),
+    };
   }
 
   static async create(todo: Omit<Todo, 'id' | 'created_at' | 'updated_at'>): Promise<number> {
     const [id] = await db('todos').insert(todo);
     return id;
+  }
+
+  static async massInsert(todos: Omit<Todo, 'id' | 'created_at' | 'updated_at'>[]): Promise<void> {
+    await db('todos').insert(todos);
   }
 
   static async update(id: number, data: Partial<Omit<Todo, 'id' | 'created_at' | 'updated_at'>>): Promise<number> {

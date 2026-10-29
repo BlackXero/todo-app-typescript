@@ -6,7 +6,7 @@
     <div>
       <div class="d-flex align-items-center gap-2">
         <h2 class="fw-bold mb-0">All System Todos</h2>
-        <span class="badge bg-secondary rounded-pill px-2.5 py-1">Total: <%= todos.length %></span>
+        <span class="badge bg-secondary rounded-pill px-2.5 py-1">Total: <%= pagination.totalCount %></span>
       </div>
       <p class="text-muted small mb-0 mt-1">Admin oversight and moderation table for all tasks created across the platform</p>
     </div>
@@ -159,6 +159,42 @@
         </tbody>
       </table>
     </div>
+
+    <% if (pagination.totalPages > 1) { %>
+      <%
+        const buildPageUrl = (p) => {
+          const params = new URLSearchParams();
+          if (filters.search) params.set('search', filters.search);
+          if (filters.userId && filters.userId !== 'all') params.set('userId', filters.userId);
+          if (filters.status && filters.status !== 'all') params.set('status', filters.status);
+          if (filters.priority && filters.priority !== 'all') params.set('priority', filters.priority);
+          params.set('page', String(p));
+          return '/admin/todos?' + params.toString();
+        };
+      %>
+      <div class="card-footer bg-white border-0 py-3 px-4 d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
+        <div class="small text-muted">
+          Showing <strong><%= ((pagination.currentPage - 1) * pagination.limit) + 1 %></strong> to 
+          <strong><%= Math.min(pagination.currentPage * pagination.limit, pagination.totalCount) %></strong> of 
+          <strong><%= pagination.totalCount %></strong> todos
+        </div>
+        <nav aria-label="Todos pagination">
+          <ul class="pagination pagination-sm mb-0">
+            <li class="page-item <%= pagination.currentPage <= 1 ? 'disabled' : '' %>">
+              <a class="page-link" href="<%= buildPageUrl(pagination.currentPage - 1) %>">Previous</a>
+            </li>
+            <% for (let p = Math.max(1, pagination.currentPage - 2); p <= Math.min(pagination.totalPages, pagination.currentPage + 2); p++) { %>
+              <li class="page-item <%= p === pagination.currentPage ? 'active' : '' %>">
+                <a class="page-link" href="<%= buildPageUrl(p) %>"><%= p %></a>
+              </li>
+            <% } %>
+            <li class="page-item <%= pagination.currentPage >= pagination.totalPages ? 'disabled' : '' %>">
+              <a class="page-link" href="<%= buildPageUrl(pagination.currentPage + 1) %>">Next</a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    <% } %>
   </div>
 </main>
 

@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { TodoModel } from '../models/todo.model';
 import { UserModel } from '../models/user.model';
+import {faker} from "@faker-js/faker";;
 
 export class AdminController {
   static async dashboard(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -22,22 +23,49 @@ export class AdminController {
     }
   }
 
+  static async todosAdd(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const todos = Array.from({ length: 5000 }, (_, i) => ({
+        user_id: 1,
+        title: `${faker.lorem.sentence(4)} => ${i + 1}`,
+        description: faker.lorem.paragraph({ min: 1, max: 5 }),
+        status: 'pending' as const,
+        priority: 'high' as const,
+        due_date: null,
+      }));
+
+      await TodoModel.massInsert(todos);
+      req.flash('success', 'Admin action: New todo successfully assigned and created.');
+      res.redirect('/admin/todos');
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async todosList(req: Request, res: Response, next: NextFunction): Promise<void> {
-    const { status, priority, userId, search } = req.query as {
+    const { status, priority, userId, search, page } = req.query as {
       status?: string;
       priority?: string;
       userId?: string;
       search?: string;
+      page?: string;
     };
 
     try {
       const parsedUserId = userId && userId !== 'all' ? Number(userId) : undefined;
-      const todos = await TodoModel.findAllWithOwner({
+      const currentPage = Math.max(1, parseInt(page || '1', 10) || 1);
+      const limit = 50;
+
+      const { todos, total } = await TodoModel.paginate({
         status,
         priority,
         userId: parsedUserId,
         search,
+        page: currentPage,
+        limit,
       });
+
+      const totalPages = Math.ceil(total / limit) || 1;
       const users = await UserModel.getAllWithTodoCount();
       const stats = await TodoModel.getStats();
 
@@ -46,6 +74,12 @@ export class AdminController {
         todos,
         users,
         stats,
+        pagination: {
+          currentPage,
+          totalPages,
+          totalCount: total,
+          limit,
+        },
         filters: {
           status: status || 'all',
           priority: priority || 'all',

@@ -10,6 +10,7 @@ export class AuthController {
   }
 
   static async login(req: Request, res: Response, next: NextFunction): Promise<void> {
+    console.log(req.body);
     const { identifier, password } = req.body;
 
     try {

@@ -10,6 +10,7 @@ router.use(requireAdmin);
 
 router.get('/', AdminController.dashboard);
 router.get('/todos', AdminController.todosList);
+router.get('/todos/add', AdminController.todosAdd);
 router.post('/todos', validate(adminTodoSchema), AdminController.createTodo);
 router.post('/todos/:id/update', validate(adminTodoSchema), AdminController.updateTodo);
 router.post('/todos/:id/delete', AdminController.deleteTodo);
